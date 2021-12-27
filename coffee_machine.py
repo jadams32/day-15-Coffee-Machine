@@ -2,33 +2,58 @@ import sys
 
 from coffee_data import menu, resources
 from art import logo
-from collections import Counter
+
 
 print(logo)
 
 
 profit_collected = 0
 
-def show_report():
-    print(f"Water: {profit_collected}ml")
-    print(f"Milk: {profit_collected}ml")
-    print(f"Coffee: {profit_collected}ml")
-    print(f"Money: ${profit_collected}")
 
-def make_coffee():
-    resources_left = {key: resources[key] - menu[customer_drink_selection].get(key, 0) for key in resources}
-    print(resources_left)
+def return_change():
+    change = format(total_inserted - selected_drink_cost, '.2f')
+    print(f"Here is ${change} in change")
+
+
+def make_coffee(customer_drink_selection, selection_ingredients):
+
+    for item in selection_ingredients:
+        resources[item] -= selection_ingredients[item]
     print(f"Here's your {customer_drink_selection}. Enjoy!")
 
 
-def return_change(total_inserted, selected_drink_cost):
-    change = format(total_inserted - selected_drink_cost, '.2f')
-    print(f"Here is ${change} in change")
+def show_report():
+    print(f'Water: {resources["water"]}ml')
+    print(f'Milk: {resources["milk"]}ml')
+    print(f'Coffee: {resources["coffee"]}ml')
+    print(f"Money: ${profit_collected}")
+
+
+def accept_money():
+    """Asks the user for coin input and returns the total"""
+
+    print("Please Insert Coins")
+    inserted_quarters = float(input("How many quarters?: ")) * .25
+    inserted_dimes = float(input("How many dimes?: ")) * .10
+    inserted_nickels = float(input("How many nickels?: ")) * .05
+    inserted_pennies = float(input("How many pennies?: ")) * .01
+
+    total = inserted_quarters + inserted_dimes + inserted_nickels + inserted_pennies
+    return total
+
+
+def enough_resources(selection_ingredients):
+    for item in selection_ingredients:
+        if selection_ingredients[item] > resources[item]:
+            print(f'Sorry there is not enough {item}.')
+            return False
+    return True
 
 
 while resources != 0:
 
     customer_drink_selection = input("What drink would you like today? (espresso/latte/cappuccino): ").lower()
+    # print(menu[customer_drink_selection]["ingredients"])
     if customer_drink_selection == "off":
         sys.exit()
     elif customer_drink_selection == "report":
@@ -36,29 +61,19 @@ while resources != 0:
     else:
 
         selected_drink_cost = menu[customer_drink_selection]["cost"]
+        selection_ingredients = menu[customer_drink_selection]["ingredients"]
 
-        print(f'A(n) {customer_drink_selection} is ${selected_drink_cost}')
-        print("Please Insert Coins")
-        inserted_quarters = float(input("How many quarters?: ")) * .25
-        inserted_dimes = float(input("How many dimes?: ")) * .10
-        inserted_nickels = float(input("How many nickels?: ")) * .05
-        inserted_pennies = float(input("How many pennies?: ")) * .01
+        if enough_resources(selection_ingredients):
+            print(f'A(n) {customer_drink_selection} is ${selected_drink_cost}')
+            total_inserted = accept_money()
+            if total_inserted == selected_drink_cost:
+                profit_collected += selected_drink_cost
+                make_coffee(customer_drink_selection, selection_ingredients)
 
-        total_inserted = inserted_quarters + inserted_dimes + inserted_nickels + inserted_pennies
+            elif total_inserted > selected_drink_cost:
+                return_change()
+                profit_collected += selected_drink_cost
+                make_coffee(customer_drink_selection, selection_ingredients)
 
-        if total_inserted == selected_drink_cost:
-            profit_collected += selected_drink_cost
-            make_coffee()
-
-        elif total_inserted > selected_drink_cost:
-            return_change(total_inserted, selected_drink_cost)
-            profit_collected += selected_drink_cost
-            make_coffee()
-
-        elif total_inserted < selected_drink_cost:
-            print("Sorry that's not enough money. Money refunded.")
-
-# TODO: 3. Check the resources to determine if enough to make drink
-# TODO: 4. If not enough resources prompt user to ask again for type of drink
-# TODO: 13. Allow user to check resources with secret word "report"
-
+            elif total_inserted < selected_drink_cost:
+                print("Sorry that's not enough money. Money refunded.")
